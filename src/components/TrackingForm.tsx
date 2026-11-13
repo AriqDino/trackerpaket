@@ -1,4 +1,4 @@
-import { AlertCircle, Loader2, Search, Sparkles, Tag } from 'lucide-react';
+import { AlertCircle, Loader2, Search, Sparkles, Tag, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { matchAwbPatterns, validateAwbFormat } from '../../shared/awbPatterns';
 import type { CourierInfo } from '../../shared/types';
@@ -24,6 +24,8 @@ interface TrackingFormProps {
   onClearError: () => void;
 }
 
+const POPULAR_COURIER_CODES = ['jne', 'jnt', 'sicepat', 'spx', 'anteraja', 'ide', 'pos'];
+
 export function TrackingForm({
   couriers,
   couriersLoading,
@@ -46,7 +48,7 @@ export function TrackingForm({
   const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (initialAwb) setAwb(initialAwb);
+    setAwb(initialAwb);
   }, [initialAwb]);
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export function TrackingForm({
   }, [initialCourier]);
 
   useEffect(() => {
-    if (initialLabel) setLabel(initialLabel);
+    setLabel(initialLabel);
   }, [initialLabel]);
 
   useEffect(() => {
@@ -66,6 +68,13 @@ export function TrackingForm({
   }, [initialDate]);
 
   const patternMatches = useMemo(() => matchAwbPatterns(awb), [awb]);
+
+  const popularCouriers = useMemo(() => {
+    const byCode = new Map(couriers.map((c) => [c.code.toLowerCase(), c]));
+    return POPULAR_COURIER_CODES.map((code) => byCode.get(code)).filter(
+      (c): c is CourierInfo => Boolean(c)
+    );
+  }, [couriers]);
 
   const filteredCouriers = useMemo(() => {
     const q = courierFilter.trim().toLowerCase();
@@ -121,22 +130,22 @@ export function TrackingForm({
     <form
       onSubmit={handleFormSubmit}
       noValidate
-      className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 space-y-5"
+      className="rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#0D1320] p-5 sm:p-7 space-y-6"
     >
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+        <h1 className="font-display text-xl sm:text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
           Lacak Paket Baru
-        </h2>
+        </h1>
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          Masukkan nomor resi dan pilih ekspedisi untuk melihat status terkini dan riwayat perjalanan paket.
+          Masukkan nomor resi, pilih ekspedisi (atau gunakan deteksi pola otomatis), lalu pantau riwayat perjalanan paket.
         </p>
       </div>
 
       {/* Nomor Resi */}
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <label
           htmlFor="awb-input"
-          className="block text-sm font-medium text-slate-800 dark:text-slate-200"
+          className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
         >
           Nomor Resi / AWB <span className="text-rose-500">*</span>
         </label>
@@ -150,11 +159,21 @@ export function TrackingForm({
               if (validationError) setValidationError(null);
               if (error) onClearError();
             }}
-            placeholder="Contoh: 8825112045716759 atau SPXID04..."
+            placeholder="Tempel nomor resi di sini (misal: SPXID04... atau JP...)"
             autoComplete="off"
             spellCheck={false}
-            className="w-full min-h-[46px] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-mono text-sm placeholder:font-sans placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+            className="w-full min-h-[52px] pl-4 pr-11 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-950 dark:text-white font-mono text-base sm:text-lg tracking-wide placeholder:font-sans placeholder:text-sm placeholder:tracking-normal placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
           />
+          {awb && (
+            <button
+              type="button"
+              onClick={() => setAwb('')}
+              aria-label="Hapus nomor resi"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            >
+              <X className="w-4 h-4" aria-hidden="true" />
+            </button>
+          )}
         </div>
 
         {/* Smart AWB Pattern Suggestion */}
@@ -167,9 +186,9 @@ export function TrackingForm({
                 key={m.courierCode}
                 type="button"
                 onClick={() => setCourier(m.courierCode)}
-                className={`px-2 py-1 rounded-md font-medium transition-colors duration-150 ${
+                className={`px-2.5 py-1 rounded-lg font-semibold transition-colors duration-150 ${
                   courier === m.courierCode
-                    ? 'bg-sky-600 text-white dark:bg-sky-500 dark:text-slate-950'
+                    ? 'bg-slate-950 text-white dark:bg-sky-500 dark:text-slate-950'
                     : 'bg-sky-50 text-sky-700 hover:bg-sky-100 dark:bg-sky-950/60 dark:text-sky-300 dark:hover:bg-sky-900/60'
                 }`}
               >
@@ -180,12 +199,43 @@ export function TrackingForm({
         )}
       </div>
 
+      {/* Quick-Pick Popular Couriers */}
+      {popularCouriers.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            Pilih cepat ekspedisi populer:
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {popularCouriers.map((item) => {
+              const active = courier === item.code;
+              return (
+                <button
+                  key={item.code}
+                  type="button"
+                  onClick={() => {
+                    setCourier(item.code);
+                    if (validationError) setValidationError(null);
+                  }}
+                  className={`min-h-[34px] px-3 py-1 rounded-lg border text-xs font-medium transition-colors whitespace-nowrap ${
+                    active
+                      ? 'border-slate-950 bg-slate-950 text-white dark:border-sky-400 dark:bg-sky-500 dark:text-slate-950 font-semibold'
+                      : 'border-slate-200 dark:border-slate-800 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  {item.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Pilihan Ekspedisi & Label Paket */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label
             htmlFor="courier-select"
-            className="block text-sm font-medium text-slate-800 dark:text-slate-200"
+            className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
           >
             Ekspedisi <span className="text-rose-500">*</span>
           </label>
@@ -193,9 +243,9 @@ export function TrackingForm({
             type="text"
             value={courierFilter}
             onChange={(e) => setCourierFilter(e.target.value)}
-            placeholder="Cari ekspedisi (misal: JNE, J&T, SiCepat)..."
+            placeholder="Filter daftar ekspedisi..."
             aria-label="Filter daftar ekspedisi"
-            className="w-full min-h-[38px] px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700/80 bg-slate-50/70 dark:bg-slate-950/70 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            className="w-full min-h-[38px] px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/70 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
           <select
             id="courier-select"
@@ -227,7 +277,7 @@ export function TrackingForm({
         <div className="space-y-1.5">
           <label
             htmlFor="package-label-input"
-            className="block text-sm font-medium text-slate-800 dark:text-slate-200"
+            className="block text-sm font-semibold text-slate-800 dark:text-slate-200"
           >
             Nama / Label Paket <span className="text-xs font-normal text-slate-500">(opsional)</span>
           </label>
@@ -254,7 +304,7 @@ export function TrackingForm({
 
       {/* Field Kondisional JNE / Laris Cargo */}
       {(showJnePhone || showLarisDate) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1 border-t border-slate-100 dark:border-slate-800">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-100 dark:border-slate-800">
           {showJnePhone && (
             <div className="space-y-1.5">
               <label
@@ -317,14 +367,14 @@ export function TrackingForm({
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800/80">
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Hasil pelacakan otomatis tersimpan ke daftar paket Anda.
         </p>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="min-h-[46px] px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-60 disabled:cursor-not-allowed dark:bg-sky-500 dark:hover:bg-sky-400 text-white dark:text-slate-950 font-semibold text-sm inline-flex items-center justify-center gap-2 transition-colors duration-150 whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+          className="min-h-[46px] px-6 py-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed dark:bg-sky-500 dark:hover:bg-sky-400 text-white dark:text-slate-950 font-semibold text-sm inline-flex items-center justify-center gap-2 transition-colors duration-150 whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
         >
           {isSubmitting ? (
             <>

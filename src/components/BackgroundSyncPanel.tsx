@@ -30,60 +30,62 @@ export function BackgroundSyncPanel({
   onSyncNow,
 }: BackgroundSyncPanelProps) {
   const modeLabel = periodicRegistered
-    ? 'Periodic Background Sync aktif (6 jam)'
+    ? 'Periodic Background Sync aktif setiap 6 jam'
     : periodicSupported
       ? 'Sinkronisasi otomatis 6 jam (menunggu izin PWA terinstal)'
-      : 'Sinkronisasi otomatis 6 jam via Service Worker saat aplikasi dibuka / online';
+      : 'Sinkronisasi otomatis 6 jam via Service Worker saat aplikasi dibuka';
 
   return (
     <section
       aria-label="Pengaturan sinkronisasi latar belakang"
-      className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+      className="rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#0D1320] px-4 py-3.5 sm:px-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3.5"
     >
-      <div className="space-y-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-          <Clock className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" aria-hidden="true" />
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
-            Sinkronisasi Otomatis (Setiap 6 Jam)
-          </h2>
-          <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-            · {activePackageCount} paket belum diterima
-          </span>
+      <div className="flex items-start gap-3 min-w-0">
+        <div className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 mt-0.5">
+          <Clock className="w-4 h-4" aria-hidden="true" />
         </div>
+        <div className="space-y-0.5 min-w-0">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+              Pembaruan Otomatis 6 Jam
+            </h2>
+            <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+              · {activePackageCount} resi aktif dipantau
+            </span>
+          </div>
 
-        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-          {settings.enabled ? modeLabel : 'Sinkronisasi otomatis latar belakang dinonaktifkan.'}
-          {lastSyncAt && (
-            <>
-              {' · '}
-              <span className="tabular-nums">
-                Terakhir disinkronkan {formatRelativeTimeId(lastSyncAt)}
-              </span>
-              {lastRunResult && lastRunResult.updated > 0 && (
-                <span> ({lastRunResult.updated} paket diperbarui)</span>
-              )}
-            </>
-          )}
-        </p>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            {settings.enabled ? modeLabel : 'Sinkronisasi otomatis latar belakang dinonaktifkan.'}
+            {lastSyncAt && (
+              <>
+                {' · '}
+                <span className="tabular-nums">
+                  Terakhir {formatRelativeTimeId(lastSyncAt)}
+                </span>
+                {lastRunResult && lastRunResult.updated > 0 && (
+                  <span> ({lastRunResult.updated} paket diperbarui)</span>
+                )}
+              </>
+            )}
+          </p>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-        {/* Toggle Auto Sync */}
+      <div className="flex flex-wrap items-center gap-2 shrink-0">
         <button
           type="button"
           role="switch"
           aria-checked={settings.enabled}
           onClick={() => onToggleAutoSync(!settings.enabled)}
-          className={`min-h-[38px] px-3 py-1.5 rounded-lg border text-xs font-medium inline-flex items-center gap-2 transition-colors whitespace-nowrap ${
+          className={`min-h-[38px] px-3 py-1.5 rounded-xl border text-xs font-semibold inline-flex items-center gap-2 transition-colors whitespace-nowrap ${
             settings.enabled
-              ? 'border-sky-300 bg-sky-50 text-sky-800 dark:border-sky-700 dark:bg-sky-950/50 dark:text-sky-200'
-              : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+              ? 'border-sky-300 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-950/60 dark:text-sky-200'
+              : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
           }`}
         >
-          <span>{settings.enabled ? 'Otomatis: Aktif' : 'Otomatis: Nonaktif'}</span>
+          <span>{settings.enabled ? 'Auto 6 Jam: Aktif' : 'Auto 6 Jam: Nonaktif'}</span>
         </button>
 
-        {/* Toggle Notifikasi Perubahan Status */}
         {notificationPermission !== 'unsupported' && (
           <button
             type="button"
@@ -94,10 +96,10 @@ export function BackgroundSyncPanel({
                 : 'Aktifkan notifikasi jika status paket berubah'
             }
             disabled={notificationPermission === 'denied'}
-            className={`min-h-[38px] px-3 py-1.5 rounded-lg border text-xs font-medium inline-flex items-center gap-1.5 transition-colors whitespace-nowrap disabled:opacity-50 ${
+            className={`min-h-[38px] px-3 py-1.5 rounded-xl border text-xs font-medium inline-flex items-center gap-1.5 transition-colors whitespace-nowrap disabled:opacity-50 ${
               settings.notifyOnChange
                 ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
-                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
             }`}
           >
             {settings.notifyOnChange ? (
@@ -105,16 +107,15 @@ export function BackgroundSyncPanel({
             ) : (
               <BellOff className="w-3.5 h-3.5" aria-hidden="true" />
             )}
-            <span>{settings.notifyOnChange ? 'Notifikasi: Aktif' : 'Notifikasi'}</span>
+            <span>{settings.notifyOnChange ? 'Notifikasi Aktif' : 'Notifikasi'}</span>
           </button>
         )}
 
-        {/* Tombol Sinkronisasi Latar Belakang Sekarang */}
         <button
           type="button"
           onClick={onSyncNow}
           disabled={isSyncing || activePackageCount === 0}
-          className="min-h-[38px] px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-semibold inline-flex items-center gap-1.5 disabled:opacity-50 transition-colors whitespace-nowrap"
+          className="min-h-[38px] px-3.5 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-950 text-xs font-semibold inline-flex items-center gap-1.5 disabled:opacity-50 transition-colors whitespace-nowrap"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} aria-hidden="true" />
           <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan SW'}</span>

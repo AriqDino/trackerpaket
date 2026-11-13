@@ -36,7 +36,10 @@ function mapAuthErrorMessage(err: unknown): string {
     return 'Gagal terhubung ke layanan autentikasi Google. Periksa koneksi internet Anda.';
   }
   if (code === 'auth/unauthorized-domain') {
-    return 'Domain ini belum diotorisasi di pengaturan Firebase Authentication.';
+    const host = typeof window !== 'undefined' ? window.location.hostname : '';
+    return host
+      ? `Domain "${host}" belum diotorisasi di Firebase Console (Authentication → Settings → Authorized domains).`
+      : 'Domain ini belum diotorisasi di pengaturan Firebase Authentication.';
   }
   return 'Gagal masuk dengan akun Google. Silakan coba beberapa saat lagi.';
 }

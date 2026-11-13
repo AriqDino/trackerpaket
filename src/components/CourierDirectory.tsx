@@ -39,9 +39,9 @@ export function CourierDirectory({
 
   return (
     <section className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-slate-950 dark:text-white text-balance">
             Daftar Ekspedisi Didukung
           </h1>
           <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -53,7 +53,7 @@ export function CourierDirectory({
           type="button"
           onClick={onRefresh}
           disabled={isLoading}
-          className="min-h-[42px] px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-200 inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 transition-colors"
+          className="min-h-[42px] px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0D1320] hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-200 inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 transition-colors"
         >
           <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} aria-hidden="true" />
           <span>Perbarui Daftar</span>
@@ -78,11 +78,11 @@ export function CourierDirectory({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari nama atau kode ekspedisi (contoh: jne, spx, sicepat)..."
-            className="w-full min-h-[44px] pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            className="w-full min-h-[44px] pl-10 pr-4 py-2 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0D1320] text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
         </div>
 
-        <div className="inline-flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800/90 self-start">
+        <div className="inline-flex items-center p-1 rounded-xl bg-slate-200/70 dark:bg-slate-800/80 self-start">
           {(
             [
               { id: 'all', label: `Semua (${couriers.length})` },
@@ -96,7 +96,7 @@ export function CourierDirectory({
               onClick={() => setStatusFilter(tab.id)}
               className={`min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
                 statusFilter === tab.id
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                  ? 'bg-white dark:bg-[#0D1320] text-slate-950 dark:text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -108,7 +108,7 @@ export function CourierDirectory({
 
       {/* Grid Kurir */}
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-10 text-center text-sm text-slate-500 dark:text-slate-400">
+        <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0D1320] p-10 text-center text-sm text-slate-500 dark:text-slate-400">
           Tidak ada ekspedisi yang cocok dengan pencarian Anda.
         </div>
       ) : (
@@ -118,10 +118,10 @@ export function CourierDirectory({
             return (
               <div
                 key={c.code}
-                className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex items-center justify-between gap-3"
+                className="rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#0D1320] p-4 flex items-center justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                  <p className="font-display text-base font-semibold text-slate-950 dark:text-white truncate">
                     {c.name}
                   </p>
                   <div className="mt-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
@@ -148,7 +148,7 @@ export function CourierDirectory({
                 <button
                   type="button"
                   onClick={() => onSelectCourierToTrack(c.code)}
-                  className="min-h-[38px] px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-sky-600 text-slate-800 hover:text-white dark:bg-slate-800 dark:hover:bg-sky-500 dark:text-slate-200 dark:hover:text-slate-950 text-xs font-semibold inline-flex items-center gap-1 whitespace-nowrap shrink-0 transition-colors"
+                  className="min-h-[38px] px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-950 text-slate-800 hover:text-white dark:bg-slate-800 dark:hover:bg-sky-500 dark:text-slate-200 dark:hover:text-slate-950 text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-colors"
                 >
                   <span>Lacak</span>
                   <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />

@@ -188,7 +188,7 @@ export function applyAndSaveTheme(mode: ThemeMode): void {
   }
   const meta = document.getElementById('app-theme-color');
   if (meta) {
-    meta.setAttribute('content', mode === 'dark' ? '#090D16' : '#F8FAFC');
+    meta.setAttribute('content', mode === 'dark' ? '#060911' : '#F4F6F9');
   }
   try {
     localStorage.setItem(THEME_STORAGE_KEY, mode);

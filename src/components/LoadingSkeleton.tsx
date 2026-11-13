@@ -4,7 +4,7 @@ export function PackageListSkeleton() {
       {[1, 2, 3].map((item) => (
         <div
           key={item}
-          className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3 animate-pulse"
+          className="rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#0D1320] p-4 space-y-3 animate-pulse"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-2 flex-1">
@@ -24,7 +24,7 @@ export function PackageListSkeleton() {
 export function DetailSkeleton() {
   return (
     <div
-      className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 space-y-6 animate-pulse"
+      className="rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#0D1320] p-6 space-y-6 animate-pulse"
       aria-hidden="true"
     >
       <div className="flex items-start justify-between gap-4">

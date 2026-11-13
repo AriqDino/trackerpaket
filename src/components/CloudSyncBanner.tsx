@@ -18,14 +18,14 @@ export function CloudSyncBanner({ localPackageCount }: CloudSyncBannerProps) {
   return (
     <section
       aria-label="Sinkronisasi Cloud Akun Google"
-      className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      className="rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#0D1320] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
     >
       <div className="flex items-start gap-3.5 min-w-0">
         <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
           <Cloud className="w-5 h-5" aria-hidden="true" />
         </div>
         <div className="space-y-0.5 min-w-0">
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+          <h2 className="font-display text-sm font-semibold text-slate-950 dark:text-white">
             Simpan &amp; Sinkronkan Paket Antar Perangkat
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">

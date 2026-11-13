@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import {
   AlertCircle,
+  ArrowRight,
   CheckCircle2,
   PackageOpen,
   Plus,
@@ -107,6 +108,7 @@ export default function App() {
     phoneLast5: '',
     date: '',
   });
+  const [quickAwb, setQuickAwb] = useState<string>('');
 
   const { user, authReady, authError, clearAuthError } = useFirebaseAuth();
   const [cloudLoading, setCloudLoading] = useState<boolean>(false);
@@ -550,8 +552,24 @@ export default function App() {
     setActiveTab('track');
   };
 
+  const handleQuickAwbSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleaned = quickAwb.trim().toUpperCase();
+    setTrackError(null);
+    setFormDefaults({
+      awb: cleaned,
+      courier: 'auto',
+      label: '',
+      phoneLast5: '',
+      date: '',
+    });
+    setQuickAwb('');
+    setActiveTab('track');
+    setMobileDetailOpen(false);
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#090D16] text-slate-900 dark:text-slate-100 pb-20 md:pb-10">
+    <div className="min-h-screen flex flex-col bg-[#F4F6F9] dark:bg-[#060911] canvas-grid-subtle text-slate-900 dark:text-slate-100 pb-20 md:pb-10">
       <HeaderNav
         activeTab={activeTab}
         onSelectTab={(tab) => {
@@ -608,42 +626,64 @@ export default function App() {
             transition={{ duration: 0.16 }}
             className="space-y-6"
           >
-            {/* Header Dashboard */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-              <div className="space-y-1">
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white text-balance">
-                  Dashboard Pelacakan Paket
-                </h1>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Pantau seluruh pengiriman aktif, beri label khusus, dan periksa riwayat perjalanan paket secara real-time.
-                </p>
+            {/* Hero Command Strip */}
+            <section className="rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#0D1320] p-5 sm:p-7 space-y-5">
+              <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+                <div className="space-y-1.5 max-w-2xl">
+                  <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-slate-950 dark:text-white text-balance">
+                    Pusat Pantau Pengiriman Paket
+                  </h1>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                    Kelola seluruh nomor resi lintas ekspedisi, beri label khusus, dan pantau progres perjalanan paket secara real-time.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5 self-start lg:self-auto">
+                  <PWAInstallButton />
+
+                  {packages.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleRefreshActivePackages}
+                      disabled={isRefreshingAll}
+                      className="min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 inline-flex items-center gap-2 disabled:opacity-60 whitespace-nowrap transition-colors"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${isRefreshingAll ? 'animate-spin' : ''}`} aria-hidden="true" />
+                      <span>{isRefreshingAll ? 'Memperbarui...' : 'Perbarui Paket Aktif'}</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
-                <PWAInstallButton />
-
-                {packages.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleRefreshActivePackages}
-                    disabled={isRefreshingAll}
-                    className="min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 inline-flex items-center gap-2 disabled:opacity-60 whitespace-nowrap transition-colors"
-                  >
-                    <RefreshCw className={`w-4 h-4 ${isRefreshingAll ? 'animate-spin' : ''}`} aria-hidden="true" />
-                    <span>{isRefreshingAll ? 'Memperbarui...' : 'Perbarui Paket Aktif'}</span>
-                  </button>
-                )}
-
+              {/* Quick AWB Track Bar */}
+              <form
+                onSubmit={handleQuickAwbSubmit}
+                className="flex flex-col sm:flex-row gap-2.5 pt-1"
+              >
+                <div className="relative flex-1">
+                  <Search
+                    className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                    aria-hidden="true"
+                  />
+                  <input
+                    type="text"
+                    value={quickAwb}
+                    onChange={(e) => setQuickAwb(e.target.value)}
+                    placeholder="Tempel nomor resi baru di sini untuk langsung melacak (contoh: SPXID04... atau JP...)"
+                    aria-label="Nomor resi pelacakan cepat"
+                    spellCheck={false}
+                    className="w-full min-h-[46px] pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-mono text-sm text-slate-950 dark:text-white placeholder:font-sans placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                </div>
                 <button
-                  type="button"
-                  onClick={handleOpenNewTrack}
-                  className="sm:hidden min-h-[42px] px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold inline-flex items-center gap-1.5 whitespace-nowrap"
+                  type="submit"
+                  className="min-h-[46px] px-5 py-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 dark:bg-sky-500 dark:hover:bg-sky-400 text-white dark:text-slate-950 text-sm font-semibold inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 transition-colors"
                 >
-                  <Plus className="w-4 h-4" aria-hidden="true" />
-                  <span>Lacak Resi</span>
+                  <span>Lacak Cepat</span>
+                  <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 </button>
-              </div>
-            </div>
+              </form>
+            </section>
 
             <CloudSyncBanner localPackageCount={packages.length} />
 
@@ -658,7 +698,7 @@ export default function App() {
             />
 
             {cloudLoading && packages.length === 0 && (
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-center text-sm text-slate-600 dark:text-slate-400">
+              <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#0D1320] p-6 text-center text-sm text-slate-600 dark:text-slate-400">
                 Memuat daftar paket tersimpan dari Cloud Firestore...
               </div>
             )}
@@ -681,12 +721,12 @@ export default function App() {
 
             {/* Empty State Global bila belum ada paket sama sekali */}
             {packages.length === 0 ? (
-              <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 sm:p-12 text-center space-y-4">
+              <section className="rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#0D1320] p-8 sm:p-12 text-center space-y-4">
                 <div className="w-14 h-14 mx-auto rounded-2xl bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 flex items-center justify-center">
                   <PackageOpen className="w-7 h-7" aria-hidden="true" />
                 </div>
                 <div className="max-w-md mx-auto space-y-1.5">
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                  <h2 className="font-display text-lg font-semibold text-slate-950 dark:text-white">
                     Belum Ada Resi yang Tersimpan
                   </h2>
                   <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -719,7 +759,7 @@ export default function App() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Cari label paket, nomor resi, kurir, kota, atau nama penerima..."
                       aria-label="Cari resi tersimpan"
-                      className="w-full min-h-[44px] pl-10 pr-9 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      className="w-full min-h-[44px] pl-10 pr-9 py-2 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0D1320] text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
                     />
                     {searchQuery && (
                       <button
@@ -753,7 +793,7 @@ export default function App() {
                         }}
                         className={`min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
                           statusFilter === tab.id
-                            ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                            ? 'bg-white dark:bg-[#0D1320] text-slate-950 dark:text-white shadow-xs'
                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
@@ -772,7 +812,7 @@ export default function App() {
                     }`}
                   >
                     {filteredPackages.length === 0 ? (
-                      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center space-y-2">
+                      <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#0D1320] p-8 text-center space-y-2">
                         <p className="text-sm font-medium text-slate-900 dark:text-white">
                           Tidak ada paket yang sesuai filter
                         </p>
@@ -827,7 +867,7 @@ export default function App() {
                         onDelete={handleDelete}
                       />
                     ) : (
-                      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                      <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#0D1320] p-10 text-center text-sm text-slate-500 dark:text-slate-400">
                         Pilih salah satu paket di sebelah kiri untuk melihat detail pengiriman dan timeline perjalanan.
                       </div>
                     )}
@@ -866,8 +906,8 @@ export default function App() {
               {isTracking ? (
                 <DetailSkeleton />
               ) : (
-                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 space-y-4">
-                  <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+                <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#0D1320] p-5 sm:p-6 space-y-4">
+                  <h3 className="font-display text-base font-semibold text-slate-950 dark:text-white">
                     Panduan Pelacakan &amp; Deteksi Ekspedisi
                   </h3>
                   <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">

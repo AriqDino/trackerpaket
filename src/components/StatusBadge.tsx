@@ -29,11 +29,11 @@ export function StatusIcon({
 export function StatusBadge({ status, size = 'sm' }: StatusBadgeProps) {
   const meta = PACKAGE_STATUS_META[status];
   const sizeClasses =
-    size === 'md' ? 'px-2.5 py-1 text-xs gap-1.5' : 'px-2 py-0.5 text-xs gap-1';
+    size === 'md' ? 'px-3 py-1 text-xs gap-1.5' : 'px-2.5 py-0.5 text-[11px] gap-1';
 
   return (
     <span
-      className={`inline-flex items-center font-medium rounded-md whitespace-nowrap shrink-0 ${sizeClasses} ${meta.badgeClasses}`}
+      className={`inline-flex items-center font-semibold rounded-md whitespace-nowrap shrink-0 ${sizeClasses} ${meta.badgeClasses}`}
     >
       <StatusIcon status={status} className={size === 'md' ? 'w-3.5 h-3.5' : 'w-3 h-3'} />
       <span>{meta.label}</span>
