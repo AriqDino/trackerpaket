@@ -6,18 +6,19 @@ COPY package*.json ./
 RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm install --legacy-peer-deps; fi
 
 COPY . .
-RUN npm run build
+RUN NODE_OPTIONS="--max-old-space-size=1024" npm run build
 
-# Stage 2: Production runtime
+# Stage 2: Minimal production runtime (only Express + dotenv)
 FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV NODE_OPTIONS="--max-old-space-size=256"
 
-COPY package*.json ./
-RUN if [ -f package-lock.json ]; then npm ci --omit=dev --legacy-peer-deps; else npm install --omit=dev --legacy-peer-deps; fi && npm cache clean --force
+RUN npm install --no-save --omit=dev express@^4.21.2 dotenv@^17.2.3 && npm cache clean --force
 
+COPY package.json ./
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/shared ./shared
 COPY server.ts ./

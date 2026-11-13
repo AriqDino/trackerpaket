@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: my-package-tracker
     restart: unless-stopped
+    mem_limit: 256m
     ports:
       - "3000:3000"
     env_file:

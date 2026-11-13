@@ -11,15 +11,41 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Pull Latest Code & Rebuild Docker
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
+          node-version: '22'
+
+      - name: Build Frontend & PWA on GitHub Runner
+        run: |
+          npm install --legacy-peer-deps
+          npm run build
+          tar -czf prebuilt-dist.tar.gz -C dist .
+
+      - name: Upload Prebuilt Assets & Restart Lightweight Container
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+          scp -i ~/.ssh/deploy_key prebuilt-dist.tar.gz "$SSH_USER@$SSH_HOST:/opt/my-package-tracker/prebuilt-dist.tar.gz"
+
+          ssh -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" '
             set -e
             cd /opt/my-package-tracker
             git pull
-            docker compose up -d --build
+            rm -rf .prebuilt-dist
+            mkdir -p .prebuilt-dist
+            tar -xzf prebuilt-dist.tar.gz -C .prebuilt-dist
+            rm -f prebuilt-dist.tar.gz
+            docker compose -f docker-compose.prebuilt.yml up -d --build
             docker image prune -f
+          '
