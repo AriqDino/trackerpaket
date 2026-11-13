@@ -37,7 +37,7 @@ export function HeaderNav({
             <Package className="w-4 h-4" aria-hidden="true" />
           </span>
           <span className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white whitespace-nowrap shrink-0">
-            My Package Tracker
+            LacakPaket
           </span>
         </button>
 

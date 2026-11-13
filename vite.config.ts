@@ -24,8 +24,8 @@ export default defineConfig(() => {
         ],
         manifest: {
           id: '/',
-          name: 'My Package Tracker',
-          short_name: 'MyTracker',
+          name: 'LacakPaket — Pelacak Paket',
+          short_name: 'LacakPaket',
           description:
             'Aplikasi pelacakan paket multi-ekspedisi modern berbasis web dengan integrasi API resmi BinderByte.',
           theme_color: '#0284C7',

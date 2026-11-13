@@ -40,7 +40,7 @@ async function startServer() {
   }
 
   httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`My Package Tracker server running on http://0.0.0.0:${PORT}`);
+    console.log(`LacakPaket server running on http://0.0.0.0:${PORT}`);
   });
 }
 
