@@ -1,0 +1,6 @@
+{
+  "name": "My Package Tracker",
+  "description": "Aplikasi pelacakan paket multi-ekspedisi modern berbasis web dengan integrasi API resmi BinderByte.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
