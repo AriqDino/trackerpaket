@@ -31,9 +31,27 @@ export default defineConfig(() => {
           theme_color: '#0284C7',
           background_color: '#F8FAFC',
           display: 'standalone',
+          orientation: 'any',
           start_url: '/',
           scope: '/',
           lang: 'id',
+          categories: ['utilities', 'productivity', 'shopping'],
+          shortcuts: [
+            {
+              name: 'Lacak Paket Baru',
+              short_name: 'Lacak Resi',
+              description: 'Langsung buka formulir pelacakan nomor resi baru',
+              url: '/?tab=track',
+              icons: [{ src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+            },
+            {
+              name: 'Daftar Ekspedisi',
+              short_name: 'Ekspedisi',
+              description: 'Lihat daftar ekspedisi dan status layanan BinderByte',
+              url: '/?tab=couriers',
+              icons: [{ src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+            },
+          ],
           icons: [
             {
               src: '/pwa-192x192.png',
@@ -57,6 +75,7 @@ export default defineConfig(() => {
         },
         injectManifest: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         },
         devOptions: {
           enabled: true,

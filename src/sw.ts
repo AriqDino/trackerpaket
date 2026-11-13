@@ -3,7 +3,7 @@ import { clientsClaim } from 'workbox-core';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
-import { CacheFirst, NetworkOnly } from 'workbox-strategies';
+import { CacheFirst, NetworkFirst, NetworkOnly } from 'workbox-strategies';
 import {
   BACKGROUND_SYNC_INTERVAL_MS,
   BROADCAST_CHANNEL_NAME,
@@ -69,7 +69,20 @@ cleanupOutdatedCaches();
 clientsClaim();
 void self.skipWaiting();
 
-// Pastikan /api/* selalu langsung ke server (tidak pernah cache offline stale)
+// Daftar ekspedisi memakai NetworkFirst agar tetap bisa dibuka saat offline
+registerRoute(
+  ({ url }) => url.pathname === '/api/couriers',
+  new NetworkFirst({
+    cacheName: 'couriers-api-cache',
+    networkTimeoutSeconds: 5,
+    plugins: [
+      new ExpirationPlugin({ maxEntries: 5, maxAgeSeconds: 60 * 60 * 24 }),
+      new CacheableResponsePlugin({ statuses: [200] }),
+    ],
+  })
+);
+
+// Endpoint pelacakan & health selalu langsung ke server (tidak pernah cache offline stale)
 registerRoute(/^\/api\/.*/i, new NetworkOnly());
 
 // Cache font Google Fonts

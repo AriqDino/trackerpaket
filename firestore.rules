@@ -1,0 +1,297 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable Hardened Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Entity Validators
+    function isValidUserAccount(data, userId) {
+      return data.keys().hasAll([
+        'uid',
+        'displayName',
+        'photoURL',
+        'backgroundSyncEnabled',
+        'notifyOnChange',
+        'createdAt',
+        'updatedAt'
+      ]) && data.keys().hasOnly([
+        'uid',
+        'displayName',
+        'photoURL',
+        'backgroundSyncEnabled',
+        'notifyOnChange',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.uid is string &&
+      data.uid == userId &&
+      data.uid == request.auth.uid &&
+      isValidId(data.uid) &&
+      data.displayName is string &&
+      data.displayName.size() <= 120 &&
+      data.photoURL is string &&
+      data.photoURL.size() <= 500 &&
+      data.backgroundSyncEnabled is bool &&
+      data.notifyOnChange is bool &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidTrackingSummary(summary) {
+      return summary is map &&
+      summary.keys().hasAll([
+        'awb',
+        'courier',
+        'service',
+        'status',
+        'date',
+        'desc',
+        'amount',
+        'weight'
+      ]) &&
+      summary.keys().hasOnly([
+        'awb',
+        'courier',
+        'service',
+        'status',
+        'date',
+        'desc',
+        'amount',
+        'weight'
+      ]) &&
+      summary.awb is string && summary.awb.size() <= 80 &&
+      summary.courier is string && summary.courier.size() <= 80 &&
+      summary['service'] is string && summary['service'].size() <= 80 &&
+      summary.status is string && summary.status.size() <= 80 &&
+      summary.date is string && summary.date.size() <= 64 &&
+      summary.desc is string && summary.desc.size() <= 500 &&
+      summary.amount is string && summary.amount.size() <= 40 &&
+      summary.weight is string && summary.weight.size() <= 40;
+    }
+
+    function isValidTrackingDetail(detail) {
+      return detail is map &&
+      detail.keys().hasAll(['origin', 'destination', 'shipper', 'receiver']) &&
+      detail.keys().hasOnly(['origin', 'destination', 'shipper', 'receiver']) &&
+      detail.origin is string && detail.origin.size() <= 200 &&
+      detail.destination is string && detail.destination.size() <= 200 &&
+      detail.shipper is string && detail.shipper.size() <= 160 &&
+      detail.receiver is string && detail.receiver.size() <= 160;
+    }
+
+    function isValidTrackingHistory(history) {
+      return history is list &&
+      history.size() <= 100 &&
+      (
+        history.size() == 0 ||
+        (
+          history[0] is map &&
+          history[0].keys().hasAll(['date', 'desc', 'location']) &&
+          history[0].keys().hasOnly(['date', 'desc', 'location']) &&
+          history[0].date is string && history[0].date.size() <= 64 &&
+          history[0].desc is string && history[0].desc.size() <= 500 &&
+          history[0].location is string && history[0].location.size() <= 200
+        )
+      );
+    }
+
+    function isValidTrackingPayload(tracking) {
+      return tracking is map &&
+      tracking.keys().hasAll([
+        'awb',
+        'courierCode',
+        'courierName',
+        'normalizedStatus',
+        'rawStatus',
+        'estimatedArrival',
+        'summary',
+        'detail',
+        'history',
+        'cached',
+        'fetchedAt'
+      ]) &&
+      tracking.keys().hasOnly([
+        'awb',
+        'courierCode',
+        'courierName',
+        'normalizedStatus',
+        'rawStatus',
+        'estimatedArrival',
+        'summary',
+        'detail',
+        'history',
+        'cached',
+        'fetchedAt',
+        'detectedAutomatically'
+      ]) &&
+      tracking.awb is string && tracking.awb.size() >= 3 && tracking.awb.size() <= 80 &&
+      tracking.courierCode is string && tracking.courierCode.size() >= 1 && tracking.courierCode.size() <= 40 &&
+      tracking.courierName is string && tracking.courierName.size() >= 1 && tracking.courierName.size() <= 80 &&
+      tracking.normalizedStatus in ['waiting', 'in_transit', 'delivered', 'issue'] &&
+      tracking.rawStatus is string && tracking.rawStatus.size() <= 80 &&
+      (
+        tracking.estimatedArrival == null ||
+        (tracking.estimatedArrival is string && tracking.estimatedArrival.size() <= 80)
+      ) &&
+      isValidTrackingSummary(tracking.summary) &&
+      isValidTrackingDetail(tracking.detail) &&
+      isValidTrackingHistory(tracking.history) &&
+      tracking.cached is bool &&
+      tracking.fetchedAt is string && tracking.fetchedAt.size() <= 64 &&
+      (!('detectedAutomatically' in tracking) || tracking.detectedAutomatically is bool);
+    }
+
+    function isValidTrackedPackage(data, userId) {
+      return data.keys().hasAll([
+        'id',
+        'ownerId',
+        'label',
+        'awb',
+        'courierCode',
+        'courierName',
+        'normalizedStatus',
+        'tracking',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id',
+        'ownerId',
+        'label',
+        'awb',
+        'courierCode',
+        'courierName',
+        'phoneLast5',
+        'transactionDate',
+        'normalizedStatus',
+        'tracking',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.id is string && data.id.size() >= 3 && data.id.size() <= 128 &&
+      data.ownerId is string && data.ownerId == userId && data.ownerId == request.auth.uid && isValidId(data.ownerId) &&
+      data.label is string && data.label.size() >= 1 && data.label.size() <= 120 &&
+      data.awb is string && data.awb.size() >= 3 && data.awb.size() <= 80 &&
+      data.courierCode is string && data.courierCode.size() >= 1 && data.courierCode.size() <= 40 &&
+      data.courierName is string && data.courierName.size() >= 1 && data.courierName.size() <= 80 &&
+      (!('phoneLast5' in data) || (data.phoneLast5 is string && data.phoneLast5.size() <= 10)) &&
+      (!('transactionDate' in data) || (data.transactionDate is string && data.transactionDate.size() <= 20)) &&
+      data.normalizedStatus in ['waiting', 'in_transit', 'delivered', 'issue'] &&
+      isValidTrackingPayload(data.tracking) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // Collection: /users/{userId}
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isVerifiedUser() &&
+        isOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserAccount(incoming(), userId) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserAccount(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['backgroundSyncEnabled', 'notifyOnChange', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'backgroundSyncEnabled', 'notifyOnChange', 'updatedAt'])
+        );
+
+      allow delete: if false;
+
+      // Subcollection: /users/{userId}/packages/{packageId}
+      match /packages/{packageId} {
+        allow get: if isOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(packageId) &&
+          existing().ownerId == request.auth.uid;
+
+        allow list: if isOwner(userId) &&
+          isValidId(userId) &&
+          existing().ownerId == request.auth.uid;
+
+        allow create: if isVerifiedUser() &&
+          isOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(packageId) &&
+          isValidTrackedPackage(incoming(), userId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          exists(/databases/$(database)/documents/users/$(userId));
+
+        allow update: if isVerifiedUser() &&
+          isOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(packageId) &&
+          isValidTrackedPackage(incoming(), userId) &&
+          incoming().id == existing().id &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().awb == existing().awb &&
+          incoming().courierCode == existing().courierCode &&
+          incoming().courierName == existing().courierName &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          exists(/databases/$(database)/documents/users/$(userId)) &&
+          (
+            // Action 1: Rename label
+            incoming().diff(existing()).affectedKeys().hasOnly(['label', 'updatedAt']) ||
+            // Action 2: Refresh tracking while not in terminal 'delivered' state
+            (
+              existing().normalizedStatus != 'delivered' &&
+              incoming().diff(existing()).affectedKeys().hasOnly([
+                'tracking',
+                'normalizedStatus',
+                'phoneLast5',
+                'transactionDate',
+                'label',
+                'updatedAt'
+              ])
+            )
+          );
+
+        allow delete: if isVerifiedUser() &&
+          isOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(packageId) &&
+          existing().ownerId == request.auth.uid;
+      }
+    }
+  }
+}

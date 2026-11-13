@@ -1,5 +1,6 @@
 import { Moon, Package, Plus, Sun } from 'lucide-react';
 import type { ThemeMode } from '../services/storageService';
+import { AuthAccountControl } from './AuthAccountControl';
 
 export type ActiveTab = 'dashboard' | 'track' | 'couriers';
 
@@ -9,6 +10,7 @@ interface HeaderNavProps {
   theme: ThemeMode;
   onToggleTheme: () => void;
   onOpenNewTrack: () => void;
+  onSignedOut?: () => void;
 }
 
 export function HeaderNav({
@@ -17,6 +19,7 @@ export function HeaderNav({
   theme,
   onToggleTheme,
   onOpenNewTrack,
+  onSignedOut,
 }: HeaderNavProps) {
   const navItems: Array<{ id: ActiveTab; label: string }> = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -68,8 +71,10 @@ export function HeaderNav({
           })}
         </nav>
 
-        {/* Zone 3: Primary Action + Theme Switch */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        {/* Zone 3: Auth + Theme Switch + Primary Action */}
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <AuthAccountControl onSignedOut={onSignedOut} />
+
           <button
             type="button"
             onClick={onToggleTheme}

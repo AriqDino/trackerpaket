@@ -1,0 +1,215 @@
+{
+  "entities": {
+    "UserAccount": {
+      "title": "UserAccount",
+      "description": "Akun pengguna terautentikasi Google beserta preferensi sinkronisasi LacakPaket.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID pemilik akun."
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 120,
+          "description": "Nama tampilan pengguna dari profil Google."
+        },
+        "photoURL": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 500,
+          "description": "URL foto profil pengguna."
+        },
+        "backgroundSyncEnabled": {
+          "type": "boolean",
+          "description": "Status aktif sinkronisasi otomatis paket setiap 6 jam."
+        },
+        "notifyOnChange": {
+          "type": "boolean",
+          "description": "Preferensi notifikasi saat status paket berubah."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp pembuatan dokumen akun (serverTimestamp)."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp pembaruan terakhir akun (serverTimestamp)."
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "photoURL",
+        "backgroundSyncEnabled",
+        "notifyOnChange",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "TrackingSummary": {
+      "title": "TrackingSummary",
+      "description": "Ringkasan pengiriman dari API BinderByte.",
+      "type": "object",
+      "properties": {
+        "awb": { "type": "string", "maxLength": 80 },
+        "courier": { "type": "string", "maxLength": 80 },
+        "service": { "type": "string", "maxLength": 80 },
+        "status": { "type": "string", "maxLength": 80 },
+        "date": { "type": "string", "maxLength": 64 },
+        "desc": { "type": "string", "maxLength": 500 },
+        "amount": { "type": "string", "maxLength": 40 },
+        "weight": { "type": "string", "maxLength": 40 }
+      },
+      "required": ["awb", "courier", "service", "status", "date", "desc", "amount", "weight"]
+    },
+    "TrackingDetail": {
+      "title": "TrackingDetail",
+      "description": "Detail asal, tujuan, pengirim, dan penerima paket.",
+      "type": "object",
+      "properties": {
+        "origin": { "type": "string", "maxLength": 200 },
+        "destination": { "type": "string", "maxLength": 200 },
+        "shipper": { "type": "string", "maxLength": 160 },
+        "receiver": { "type": "string", "maxLength": 160 }
+      },
+      "required": ["origin", "destination", "shipper", "receiver"]
+    },
+    "TrackingPayload": {
+      "title": "TrackingPayload",
+      "description": "Data hasil pelacakan ternormalisasi dari server BinderByte.",
+      "type": "object",
+      "properties": {
+        "awb": { "type": "string", "minLength": 3, "maxLength": 80 },
+        "courierCode": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "courierName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "normalizedStatus": {
+          "type": "string",
+          "enum": ["waiting", "in_transit", "delivered", "issue"]
+        },
+        "rawStatus": { "type": "string", "maxLength": 80 },
+        "estimatedArrival": { "type": "string", "maxLength": 80 },
+        "summary": { "type": "object", "$ref": "#/entities/TrackingSummary" },
+        "detail": { "type": "object", "$ref": "#/entities/TrackingDetail" },
+        "history": { "type": "array", "description": "Riwayat perjalanan paket (maksimal 100 entri)." },
+        "cached": { "type": "boolean" },
+        "fetchedAt": { "type": "string", "maxLength": 64 },
+        "detectedAutomatically": { "type": "boolean" }
+      },
+      "required": [
+        "awb",
+        "courierCode",
+        "courierName",
+        "normalizedStatus",
+        "rawStatus",
+        "summary",
+        "detail",
+        "history",
+        "cached",
+        "fetchedAt"
+      ]
+    },
+    "TrackedPackage": {
+      "title": "TrackedPackage",
+      "description": "Paket yang disimpan dan dipantau oleh pengguna LacakPaket.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "description": "Identifier unik paket (courierCode:AWB)."
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID pemilik paket."
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Label khusus yang diberikan pengguna."
+        },
+        "awb": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 80,
+          "description": "Nomor resi pengiriman."
+        },
+        "courierCode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "Kode kurir BinderByte."
+        },
+        "courierName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Nama tampilan ekspedisi."
+        },
+        "phoneLast5": {
+          "type": "string",
+          "maxLength": 10,
+          "description": "Opsional 5 digit terakhir nomor HP penerima untuk verifikasi JNE."
+        },
+        "transactionDate": {
+          "type": "string",
+          "maxLength": 20,
+          "description": "Opsional tanggal transaksi YYYY-MM-DD untuk Laris Cargo."
+        },
+        "normalizedStatus": {
+          "type": "string",
+          "enum": ["waiting", "in_transit", "delivered", "issue"],
+          "description": "Status pengiriman ternormalisasi."
+        },
+        "tracking": {
+          "type": "object",
+          "description": "Payload pelacakan lengkap dari BinderByte.",
+          "$ref": "#/entities/TrackingPayload"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp saat paket pertama kali disimpan (serverTimestamp)."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp pembaruan terakhir paket (serverTimestamp)."
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "label",
+        "awb",
+        "courierCode",
+        "courierName",
+        "normalizedStatus",
+        "tracking",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserAccount" },
+      "description": "Profil akun pengguna dan preferensi sinkronisasi pribadi."
+    },
+    "/users/{userId}/packages/{packageId}": {
+      "schema": { "$ref": "#/entities/TrackedPackage" },
+      "description": "Daftar paket resi tersimpan milik pengguna."
+    }
+  }
+}

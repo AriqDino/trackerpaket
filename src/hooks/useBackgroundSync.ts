@@ -49,8 +49,9 @@ function loadLocalSettings(): BackgroundSyncSettings {
 export function useBackgroundSync(options: {
   activePackageCount: number;
   onPackagesUpdated: (packages: SavedPackage[], result: BackgroundSyncRunResult) => void;
+  onSettingsChanged?: (settings: BackgroundSyncSettings) => void;
 }) {
-  const { activePackageCount, onPackagesUpdated } = options;
+  const { activePackageCount, onPackagesUpdated, onSettingsChanged } = options;
 
   const [settings, setSettings] = useState<BackgroundSyncSettings>(() => loadLocalSettings());
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
@@ -247,6 +248,20 @@ export function useBackgroundSync(options: {
     };
   }, [settings.enabled, activePackageCount, triggerServiceWorkerSync, onPackagesUpdated]);
 
+  const applyCloudSettings = useCallback(
+    async (cloudSettings: BackgroundSyncSettings) => {
+      setSettings(cloudSettings);
+      try {
+        localStorage.setItem(SETTINGS_LS_KEY, JSON.stringify(cloudSettings));
+      } catch {
+        // ignore
+      }
+      await idbSetMeta('settings', cloudSettings);
+      await registerOrUnregisterPeriodicSync(cloudSettings.enabled);
+    },
+    [registerOrUnregisterPeriodicSync]
+  );
+
   const toggleAutoSync = async (enabled: boolean) => {
     const next: BackgroundSyncSettings = { ...settings, enabled };
     setSettings(next);
@@ -257,6 +272,7 @@ export function useBackgroundSync(options: {
     }
     await idbSetMeta('settings', next);
     await registerOrUnregisterPeriodicSync(enabled);
+    onSettingsChanged?.(next);
   };
 
   const toggleNotifications = async (enable: boolean) => {
@@ -274,6 +290,7 @@ export function useBackgroundSync(options: {
       // ignore
     }
     await idbSetMeta('settings', next);
+    onSettingsChanged?.(next);
   };
 
   const syncNow = () => triggerServiceWorkerSync(true);
@@ -288,6 +305,7 @@ export function useBackgroundSync(options: {
     notificationPermission,
     toggleAutoSync,
     toggleNotifications,
+    applyCloudSettings,
     syncNow,
   };
 }

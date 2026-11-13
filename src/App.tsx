@@ -8,10 +8,12 @@ import {
   Search,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { BackgroundSyncSettings } from '../shared/backgroundSync';
 import type { CourierInfo, SavedPackage } from '../shared/types';
 import { ApiSetupBanner } from './components/ApiSetupBanner';
 import { BackgroundSyncPanel } from './components/BackgroundSyncPanel';
+import { CloudSyncBanner } from './components/CloudSyncBanner';
 import { CourierDirectory } from './components/CourierDirectory';
 import { HeaderNav, type ActiveTab } from './components/HeaderNav';
 import { DetailSkeleton } from './components/LoadingSkeleton';
@@ -20,16 +22,30 @@ import { OfflineIndicator } from './components/OfflineIndicator';
 import { PackageCard } from './components/PackageCard';
 import { PackageDetailView } from './components/PackageDetailView';
 import { PWAInstallButton } from './components/PWAInstallButton';
+import { PWAUpdateBanner } from './components/PWAUpdateBanner';
 import { SummaryStats, type StatusFilter } from './components/SummaryStats';
 import { TrackingForm } from './components/TrackingForm';
+import { useFirebaseAuth } from './context/FirebaseAuthContext';
 import { useBackgroundSync } from './hooks/useBackgroundSync';
+import {
+  deleteCloudPackage,
+  ensureUserAccount,
+  isQuotaExceededError,
+  migrateLocalPackagesToCloud,
+  renameCloudPackage,
+  subscribeUserPackages,
+  updateCloudSyncSettings,
+  upsertCloudPackage,
+} from './services/firestoreService';
 import {
   applyAndSaveTheme,
   buildPackageId,
+  clearLocalPackagesMirror,
   deleteSavedPackage,
   loadSavedPackages,
   loadThemePreference,
   renameSavedPackage,
+  replaceLocalPackagesMirror,
   saveOrUpdatePackage,
   type ThemeMode,
 } from './services/storageService';
@@ -48,7 +64,14 @@ interface ToastNotice {
 
 export default function App() {
   const [theme, setTheme] = useState<ThemeMode>(() => loadThemePreference());
-  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+    if (typeof window === 'undefined') return 'dashboard';
+    const tabParam = new URLSearchParams(window.location.search).get('tab');
+    if (tabParam === 'track' || tabParam === 'couriers' || tabParam === 'dashboard') {
+      return tabParam;
+    }
+    return 'dashboard';
+  });
 
   const [apiConfigured, setApiConfigured] = useState<boolean>(true);
   const [couriers, setCouriers] = useState<CourierInfo[]>([]);
@@ -85,6 +108,9 @@ export default function App() {
     date: '',
   });
 
+  const { user, authReady, authError, clearAuthError } = useFirebaseAuth();
+  const [cloudLoading, setCloudLoading] = useState<boolean>(false);
+
   const [toast, setToast] = useState<ToastNotice | null>(null);
 
   const showToast = useCallback((type: ToastNotice['type'], message: string) => {
@@ -92,12 +118,29 @@ export default function App() {
     setToast({ id, type, message });
     setTimeout(() => {
       setToast((curr) => (curr?.id === id ? null : curr));
-    }, 4000);
+    }, 4500);
   }, []);
+
+  useEffect(() => {
+    if (authError) {
+      showToast('error', authError);
+      clearAuthError();
+    }
+  }, [authError, clearAuthError, showToast]);
 
   useEffect(() => {
     applyAndSaveTheme(theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('tab')) {
+      url.searchParams.delete('tab');
+      const cleaned = url.pathname + (url.search ? url.search : '') + url.hash;
+      window.history.replaceState({}, '', cleaned);
+    }
+  }, []);
 
   const activePackageCount = useMemo(
     () => packages.filter((p) => p.normalizedStatus !== 'delivered').length,
@@ -107,19 +150,121 @@ export default function App() {
   const handleBackgroundPackagesUpdated = useCallback(
     (updatedPackages: SavedPackage[], result: import('../shared/backgroundSync').BackgroundSyncRunResult) => {
       setPackages(updatedPackages);
+      if (user) {
+        const activeUpdated = updatedPackages.filter((pkg) => pkg.normalizedStatus !== 'delivered');
+        void Promise.all(
+          activeUpdated.map((pkg) => upsertCloudPackage(user.uid, pkg).catch(() => undefined))
+        );
+      }
       if (result.source === 'manual-or-timer' && result.updated > 0) {
         showToast('success', `Sinkronisasi latar belakang selesai: ${result.updated} paket diperbarui.`);
       } else if (result.source === 'manual-or-timer' && result.failed > 0 && result.updated === 0) {
         showToast('error', 'Sinkronisasi latar belakang gagal memperbarui paket.');
       }
     },
-    [showToast]
+    [showToast, user]
+  );
+
+  const handleCloudSettingsChange = useCallback(
+    (nextSettings: BackgroundSyncSettings) => {
+      if (!user) return;
+      void updateCloudSyncSettings(user.uid, nextSettings).catch((err) => {
+        if (isQuotaExceededError(err)) {
+          showToast('error', 'Kuota harian Firestore tercapai. Pengaturan disimpan secara lokal.');
+        }
+      });
+    },
+    [user, showToast]
   );
 
   const backgroundSync = useBackgroundSync({
     activePackageCount,
     onPackagesUpdated: handleBackgroundPackagesUpdated,
+    onSettingsChanged: handleCloudSettingsChange,
   });
+
+  const backgroundSyncRef = useRef(backgroundSync);
+  backgroundSyncRef.current = backgroundSync;
+
+  useEffect(() => {
+    if (!authReady || !user) {
+      setCloudLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    let unsubscribePackages: (() => void) | null = null;
+    const uid = user.uid;
+
+    async function connectFirestore() {
+      setCloudLoading(true);
+      try {
+        const preLoginLocal = loadSavedPackages();
+        const cloudSettings = await ensureUserAccount(user!, backgroundSyncRef.current.settings);
+        if (cancelled) return;
+
+        await backgroundSyncRef.current.applyCloudSettings(cloudSettings);
+        if (cancelled) return;
+
+        if (preLoginLocal.length > 0) {
+          const migrated = await migrateLocalPackagesToCloud(uid, preLoginLocal);
+          if (!cancelled && migrated > 0) {
+            showToast(
+              'success',
+              `${migrated} resi lokal berhasil disinkronkan ke akun Google Anda.`
+            );
+          }
+        }
+
+        if (cancelled) return;
+        unsubscribePackages = subscribeUserPackages(
+          uid,
+          (cloudPackages) => {
+            if (cancelled) return;
+            setPackages(cloudPackages);
+            replaceLocalPackagesMirror(cloudPackages);
+            setSelectedPackageId((prev) => {
+              if (prev && cloudPackages.some((p) => p.id === prev)) return prev;
+              return cloudPackages[0]?.id ?? null;
+            });
+            setCloudLoading(false);
+          },
+          (err) => {
+            if (cancelled) return;
+            setCloudLoading(false);
+            if (isQuotaExceededError(err)) {
+              showToast(
+                'error',
+                'Kuota baca harian Firestore habis dan akan direset besok. Menampilkan data lokal sementara.'
+              );
+            } else {
+              showToast('error', 'Gagal menyinkronkan data paket dari Cloud Firestore.');
+            }
+          }
+        );
+      } catch (err) {
+        if (cancelled) return;
+        setCloudLoading(false);
+        if (isQuotaExceededError(err)) {
+          showToast(
+            'error',
+            'Kuota harian Firestore tercapai dan akan direset besok.'
+          );
+        } else {
+          showToast('error', 'Gagal terhubung ke Cloud Firestore.');
+        }
+      }
+    }
+
+    void connectFirestore();
+
+    return () => {
+      cancelled = true;
+      if (unsubscribePackages) {
+        unsubscribePackages();
+      }
+    };
+  }, [authReady, user, showToast]);
 
   const loadInitialMeta = useCallback(async (forceCouriers = false) => {
     setCouriersLoading(true);
@@ -231,6 +376,18 @@ export default function App() {
       setActiveTab('dashboard');
       setMobileDetailOpen(true);
 
+      const savedTarget = updatedList.find((p) => p.id === newId);
+      if (user && savedTarget) {
+        void upsertCloudPackage(user.uid, savedTarget).catch((err) => {
+          showToast(
+            'error',
+            isQuotaExceededError(err)
+              ? 'Kuota harian Firestore tercapai. Paket hanya tersimpan lokal.'
+              : 'Paket tersimpan lokal, tetapi gagal menyinkronkan ke Cloud.'
+          );
+        });
+      }
+
       showToast(
         'success',
         result.detectedAutomatically
@@ -262,6 +419,12 @@ export default function App() {
       });
       const updatedList = saveOrUpdatePackage(result);
       setPackages(updatedList);
+      const refreshedTarget = updatedList.find((p) => p.id === pkg.id);
+      if (user && refreshedTarget) {
+        void upsertCloudPackage(user.uid, refreshedTarget).catch(() => {
+          showToast('error', 'Status diperbarui secara lokal, gagal menyimpan ke Cloud.');
+        });
+      }
       showToast('success', `Status paket "${pkg.label}" berhasil diperbarui.`);
     } catch (err) {
       const msg =
@@ -299,7 +462,12 @@ export default function App() {
           date: pkg.transactionDate,
           refresh: true,
         });
-        setPackages(saveOrUpdatePackage(result));
+        const updatedList = saveOrUpdatePackage(result);
+        setPackages(updatedList);
+        const refreshedTarget = updatedList.find((p) => p.id === pkg.id);
+        if (user && refreshedTarget) {
+          void upsertCloudPackage(user.uid, refreshedTarget).catch(() => undefined);
+        }
         successCount += 1;
       } catch {
         failCount += 1;
@@ -339,6 +507,11 @@ export default function App() {
   const handleRename = (id: string, newLabel: string) => {
     const updated = renameSavedPackage(id, newLabel);
     setPackages(updated);
+    if (user) {
+      void renameCloudPackage(user.uid, id, newLabel).catch(() => {
+        showToast('error', 'Nama paket diperbarui lokal, gagal menyinkronkan ke Cloud.');
+      });
+    }
     showToast('success', 'Nama paket berhasil diperbarui.');
   };
 
@@ -349,7 +522,20 @@ export default function App() {
       setSelectedPackageId(updated[0]?.id ?? null);
       setMobileDetailOpen(false);
     }
+    if (user) {
+      void deleteCloudPackage(user.uid, id).catch(() => {
+        showToast('error', 'Paket dihapus lokal, gagal menghapus dari Cloud.');
+      });
+    }
     showToast('info', 'Paket dihapus dari daftar tersimpan.');
+  };
+
+  const handleSignedOut = () => {
+    clearLocalPackagesMirror();
+    setPackages([]);
+    setSelectedPackageId(null);
+    setMobileDetailOpen(false);
+    showToast('info', 'Anda telah keluar dari akun Google.');
   };
 
   const handleSelectCourierFromDirectory = (courierCode: string) => {
@@ -375,6 +561,7 @@ export default function App() {
         theme={theme}
         onToggleTheme={handleToggleTheme}
         onOpenNewTrack={handleOpenNewTrack}
+        onSignedOut={handleSignedOut}
       />
 
       {/* Toast Notification */}
@@ -458,6 +645,8 @@ export default function App() {
               </div>
             </div>
 
+            <CloudSyncBanner localPackageCount={packages.length} />
+
             {/* Ringkasan KPI */}
             <SummaryStats
               packages={packages}
@@ -467,6 +656,12 @@ export default function App() {
                 setMobileDetailOpen(false);
               }}
             />
+
+            {cloudLoading && packages.length === 0 && (
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-center text-sm text-slate-600 dark:text-slate-400">
+                Memuat daftar paket tersimpan dari Cloud Firestore...
+              </div>
+            )}
 
             {packages.length > 0 && (
               <BackgroundSyncPanel
@@ -755,6 +950,7 @@ export default function App() {
       </main>
 
       <OfflineIndicator />
+      <PWAUpdateBanner />
 
       <MobileBottomNav
         activeTab={activeTab}

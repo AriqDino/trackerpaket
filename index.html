@@ -2,20 +2,21 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>LacakPaket — Pelacak Paket Multi-Ekspedisi</title>
     <meta name="description" content="Aplikasi pelacakan paket multi-ekspedisi modern berbasis web dengan integrasi API resmi BinderByte." />
     <meta property="og:title" content="LacakPaket — Pelacak Paket Multi-Ekspedisi" />
     <meta property="og:description" content="Aplikasi pelacakan paket multi-ekspedisi modern berbasis web dengan integrasi API resmi BinderByte." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="theme-color" content="#0284C7" />
+    <meta id="app-theme-color" name="theme-color" content="#F8FAFC" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="LacakPaket" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -27,8 +28,13 @@
         try {
           var saved = localStorage.getItem('mpt_theme_preference');
           var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (saved === 'dark' || (!saved && prefersDark)) {
+          var isDark = saved === 'dark' || (!saved && prefersDark);
+          if (isDark) {
             document.documentElement.classList.add('dark');
+          }
+          var meta = document.getElementById('app-theme-color');
+          if (meta) {
+            meta.setAttribute('content', isDark ? '#090D16' : '#F8FAFC');
           }
         } catch (e) {}
       })();

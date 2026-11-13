@@ -1,8 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" rx="112" fill="#0284C7"/>
-  <rect x="24" y="24" width="464" height="464" rx="92" stroke="#38BDF8" stroke-opacity="0.35" stroke-width="8"/>
-  <path d="M256 112L384 180V332L256 400L128 332V180L256 112Z" stroke="#FFFFFF" stroke-width="26" stroke-linejoin="round"/>
-  <path d="M128 180L256 248L384 180" stroke="#FFFFFF" stroke-width="26" stroke-linejoin="round"/>
-  <path d="M256 248V400" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round"/>
-  <path d="M192 146L320 214" stroke="#BAE6FD" stroke-width="20" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0EA5E9"/>
+      <stop offset="100%" stop-color="#0369A1"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+  <rect x="20" y="20" width="472" height="472" rx="94" stroke="#E0F2FE" stroke-opacity="0.28" stroke-width="6"/>
+  <path d="M256 108L386 177V335L256 404L126 335V177L256 108Z" stroke="#FFFFFF" stroke-width="26" stroke-linejoin="round"/>
+  <path d="M126 177L256 246L386 177" stroke="#FFFFFF" stroke-width="26" stroke-linejoin="round"/>
+  <path d="M256 246V404" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round"/>
+  <path d="M191 142.5L321 211.5" stroke="#BAE6FD" stroke-width="20" stroke-linecap="round"/>
 </svg>

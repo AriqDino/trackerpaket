@@ -30,6 +30,19 @@ function persistPackages(packages: SavedPackage[]): void {
   void idbReplaceAllPackages(packages);
 }
 
+export function replaceLocalPackagesMirror(packages: SavedPackage[]): void {
+  persistPackages(packages);
+}
+
+export function clearLocalPackagesMirror(): void {
+  try {
+    localStorage.removeItem(PACKAGES_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+  void idbReplaceAllPackages([]);
+}
+
 export function applyPackagesFromServiceWorker(swPackages: SavedPackage[]): SavedPackage[] {
   const local = loadSavedPackages();
   const swMap = new Map(swPackages.map((p) => [p.id, p]));
@@ -172,6 +185,10 @@ export function applyAndSaveTheme(mode: ThemeMode): void {
     root.classList.add('dark');
   } else {
     root.classList.remove('dark');
+  }
+  const meta = document.getElementById('app-theme-color');
+  if (meta) {
+    meta.setAttribute('content', mode === 'dark' ? '#090D16' : '#F8FAFC');
   }
   try {
     localStorage.setItem(THEME_STORAGE_KEY, mode);

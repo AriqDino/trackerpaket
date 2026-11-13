@@ -17,9 +17,9 @@ export function MobileBottomNav({ activeTab, onSelectTab, savedCount }: MobileBo
   return (
     <nav
       aria-label="Navigasi seluler"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-14 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#0B111E]/95 backdrop-blur-md"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 pb-safe border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#0B111E]/95 backdrop-blur-md"
     >
-      <div className="grid grid-cols-3 h-full max-w-md mx-auto">
+      <div className="grid grid-cols-3 h-14 max-w-md mx-auto">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
